@@ -27,3 +27,9 @@ void iota_gfx_task_user(void) {
 void matrix_master_OLED_init(void){
 
 }
+
+
+
+void matrix_slave_scan_user(void){
+    iota_gfx_task();
+}

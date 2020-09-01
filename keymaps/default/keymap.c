@@ -223,6 +223,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 unregister_code(KC_LWIN);
             }
             return false;
+#ifdef POINTING_DEVICE_ENABLE
         case KC_MY_BTN1:
         case KC_MY_BTN2:
         case KC_MY_BTN3:
@@ -237,6 +238,7 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             pointing_device_set_report(currentReport);
             return false;
         }
+#endif
     }
     return true;
 }
