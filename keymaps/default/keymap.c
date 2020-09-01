@@ -16,6 +16,7 @@
 #include QMK_KEYBOARD_H
 
 #include "debug.h"
+#include "pointing_device.h"
 
 #ifdef RGBLIGHT_ENABLE
 #include "rgblight.h"
@@ -36,6 +37,10 @@ enum custom_keycodes {
     KC_WIN_CTRL_L,
     KC_WIN_CTRL_R,
     KC_WIN_TAB,
+
+    KC_MY_BTN1,
+    KC_MY_BTN2,
+    KC_MY_BTN3,
 };
 
 #define KC_MO MO
@@ -90,15 +95,15 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         ESC, 1, 2, 3, 4, 5, 6,
         TAB, Q, W, E, R, T, Y,
         LCTL, A, S, D, F, G, NO,
-        LSFT, Z, X, C, V, B, BTN3,
+        LSFT, Z, X, C, V, B, MY_BTN3,
         F5, PSCR, LWIN, RALT, SPC, MO(_FN), NO,
-           F1, F2, WIN_TAB, WIN_CTRL_L, WIN_CTRL_R, BTN1, BTN2,
+           F1, F2, WIN_TAB, WIN_CTRL_L, WIN_CTRL_R, MY_BTN1, MY_BTN2,
 
-           6,    7, 8, 9, 0,   MINS,  EQL, JYEN, BSPC,       HOME, END, PSLS, PAST,
-        MUTE,    Y, U, I, O,      P, LBRC, RBRC,  ENT,         P7,  P8,   P9, PMNS,
-           G,    H, J, K, L,   SCLN, QUOT, NUHS,               P4,  P5,   P6, PPLS,
-        MUTE,    B, N, M, COMM, DOT, SLSH,   RO, RSFT,         P1,  P2,   P3, PENT,
-        BTN2, BTN1, SPC, MO(_FN), RWIN, RCTL, PGUP, PGDN,       UP, P0, PDOT,
+              6,       7, 8, 9, 0,   MINS,  EQL, JYEN, BSPC,       HOME, END, PSLS, PAST,
+           MUTE,       Y, U, I, O,      P, LBRC, RBRC,  ENT,         P7,  P8,   P9, PMNS,
+              G,       H, J, K, L,   SCLN, QUOT, NUHS,               P4,  P5,   P6, PPLS,
+        MY_BTN3,       B, N, M, COMM, DOT, SLSH,   RO, RSFT,         P1,  P2,   P3, PENT,
+        MY_BTN2, MY_BTN1, SPC, MO(_FN),NO, RCTL, PGUP, PGDN,       UP, P0, PDOT,
         WIN_CTRL_L, WIN_CTRL_R, WIN_TAB, F10, F11, F12,  LEFT, DOWN, RGHT
     ),
 
@@ -212,10 +217,26 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
         case KC_WIN_TAB:
             if (record->event.pressed) {
                 register_code(KC_LWIN);
-                tap_code(KC_TAB);
+                register_code(KC_TAB);
+            } else {
+                unregister_code(KC_TAB);
                 unregister_code(KC_LWIN);
-                return false;
             }
+            return false;
+        case KC_MY_BTN1:
+        case KC_MY_BTN2:
+        case KC_MY_BTN3:
+        {
+            report_mouse_t currentReport = pointing_device_get_report();
+            uint8_t btn = 1 << (keycode - KC_MY_BTN1);
+            if (record->event.pressed) {
+                currentReport.buttons |= btn;
+            } else {
+                currentReport.buttons &= ~btn;
+            }
+            pointing_device_set_report(currentReport);
+            return false;
+        }
     }
     return true;
 }

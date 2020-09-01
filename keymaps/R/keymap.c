@@ -54,9 +54,6 @@ void matrix_scan_user(void) {
         int8_t x, y;
 
         read_paw3204(&stat, &x, &y);
-        mouse_rep.buttons = 0;
-        mouse_rep.h       = 0;
-        mouse_rep.v       = 0;
 
         mouse_rep = pointing_device_get_report();
 
