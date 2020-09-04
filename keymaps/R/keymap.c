@@ -7,6 +7,12 @@ extern keymap_config_t keymap_config;
 
 
 
+#define MOUSE_PAW3204_SCLK D0
+#define MOUSE_PAW3204_DATA D1
+
+#define SCROL_PAW3204_SCLK F7
+#define SCROL_PAW3204_DATA F6
+
 void matrix_init_user(void) {
     #ifdef AUDIO_ENABLE
         startup_user();
@@ -19,7 +25,8 @@ void matrix_init_user(void) {
         iota_gfx_init(!has_usb());   // turns on the display
     #endif
 
-    init_paw3204();
+    init_paw3204(MOUSE_PAW3204_SCLK, MOUSE_PAW3204_DATA);
+    init_paw3204(SCROL_PAW3204_SCLK, SCROL_PAW3204_DATA);
 }
 
 
@@ -32,51 +39,52 @@ void keyboard_post_init_user() {
 
 uint16_t mouse_rem_x = 0; // x256
 uint16_t mouse_rem_y = 0; // x256
+uint16_t scrol_rem_x = 0; // x256
+uint16_t scrol_rem_y = 0; // x256
 
 void matrix_scan_user(void) {
 
-#ifdef POINTING_DEVICE_ENABLE
-    static int  cnt;
-    static bool paw_ready;
-    if (cnt++ % 50 == 0) {
-        uint8_t pid = read_pid_paw3204();
+    static int  cnt_m, cnt_s;
+    static bool paw_ready_m, paw_ready_s;
+    if (cnt_m++ % 50 == 0) {
+        uint8_t pid = read_pid_paw3204(MOUSE_PAW3204_SCLK, MOUSE_PAW3204_DATA);
         if (pid == 0x30) {
             //dprint("paw3204 OK\n");
-            paw_ready = true;
+            paw_ready_m = true;
         } else {
-            dprintf("paw3204 NG:%d\n", pid);
-            paw_ready = false;
+            // dprintf("paw3204 NG:%d\n", pid);
+            paw_ready_m = false;
         }
     }
-
-    if (paw_ready) {
+    if (cnt_s++ % 50 == 0) {
+        uint8_t pid = read_pid_paw3204(SCROL_PAW3204_SCLK, SCROL_PAW3204_DATA);
+        if (pid == 0x30) {
+            //dprint("paw3204 OK\n");
+            paw_ready_s = true;
+        } else {
+            // dprintf("paw3204 NG:%d\n", pid);
+            paw_ready_s = false;
+        }
+    }
+    if (paw_ready_m) {
         uint8_t stat;
         int8_t x, y;
 
-        read_paw3204(&stat, &x, &y);
+        read_paw3204(&stat, &x, &y, MOUSE_PAW3204_SCLK, MOUSE_PAW3204_DATA);
 
         mouse_rep = pointing_device_get_report();
 
         uint16_t v = (uint16_t)x*x + (uint16_t)y*y;
-        // uint16_t c = (
-        //     v < 9 ? 1 :
-        //     v < 16 ? 1 :
-        //         4
-        //     );
-        if(v < 20){
-            mouse_rem_x += x*2;
-            mouse_rem_y += y*2;
-        } else if (v < 40*40) {
-            mouse_rem_x += x * 4;
-            mouse_rem_y += y * 4;
-        } else if (v < 80*80) {
-            mouse_rem_x += x * 8;
-            mouse_rem_y += y * 8;
-        } else {
-            mouse_rem_x += x * 16;
-            mouse_rem_y += y * 16;
-        }
-#define MOUSE_THRESHOLD 4
+        uint16_t c = (
+            v < 20    ? 5 :
+            v < 40*40 ? 8:
+            v < 80*80 ? 12:
+                        16);
+
+        mouse_rem_x += x * c;
+        mouse_rem_y += y * c;
+
+#define MOUSE_THRESHOLD 8
 
         int16_t dx, dy;
         dx = (-MOUSE_THRESHOLD < mouse_rem_x && mouse_rem_x < MOUSE_THRESHOLD) ? 0 : mouse_rem_x;
@@ -89,7 +97,7 @@ void matrix_scan_user(void) {
         mouse_rep.x       =  dy / MOUSE_THRESHOLD;
         mouse_rep.y       = -dx / MOUSE_THRESHOLD;
 
-        if (cnt % 10 == 0) {
+        if (cnt_m % 10 == 0) {
             // dprintf("stat:%3d   x:%4d y:%4d  |  x:%4d y:%4d\n", stat, (int)x,(int)y, mouse_rep.x, mouse_rep.y);
         }
         // dprintf("stat:%3d x:%4d y:%4d\n", stat, mouse_rep.x, mouse_rep.y);
@@ -98,7 +106,48 @@ void matrix_scan_user(void) {
             pointing_device_set_report(mouse_rep);
         }
     }
-#undef MOUSE_THRESHOLD
-#endif
-}
+#undef MOUSE_THRESHO
+#define SCROL_MIN         3
+#define SCROL_THRESHOLD_X 4
+#define SCROL_THRESHOLD_Y 64
 
+    while (paw_ready_s) {
+        uint8_t stat;
+        int8_t x, y;
+
+        read_paw3204(&stat, &y, &x, SCROL_PAW3204_SCLK, SCROL_PAW3204_DATA);
+        if ((stat & 0x80) == 0) break;
+
+        int8_t ax = abs(x);
+        int8_t ay = abs(y);
+        if(ax < SCROL_MIN && ay < SCROL_MIN) break;
+        if(ax >= ay) {
+            x += (x > 0 ? -SCROL_MIN : SCROL_MIN);
+            scrol_rem_x += x;
+        } else {
+            y += (y > 0 ? -SCROL_MIN : SCROL_MIN);
+            if(ay >= 0)  scrol_rem_y += y;
+            if(ay >= 15) scrol_rem_y += y;
+            if(ay >= 30) scrol_rem_y += y;
+            if(ay >= 45) scrol_rem_y += y;
+            if(ay >= 60) scrol_rem_y += y;
+            // for(int i = 1; i < 25; ++i) { if(ay >= i * 5) dprintf("%d", i); } if(ay >= 5) dprintf("\n");
+        }
+        int16_t dx = scrol_rem_x / SCROL_THRESHOLD_X;
+        int16_t dy = scrol_rem_y / SCROL_THRESHOLD_Y;
+        if(dx | dy) {
+            mouse_rep = pointing_device_get_report();
+            mouse_rep.h += dx;
+            mouse_rep.v += dy;
+
+            scrol_rem_x -= dx * SCROL_THRESHOLD_X;
+            scrol_rem_y -= dy * SCROL_THRESHOLD_Y;
+
+            pointing_device_set_report(mouse_rep);
+        }
+        break;
+    }
+#undef SCROL_MIN
+#undef SCROL_THRESHOLD_X
+#undef SCROL_THRESHOLD_Y
+}
