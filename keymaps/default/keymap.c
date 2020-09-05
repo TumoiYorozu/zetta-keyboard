@@ -37,10 +37,6 @@ enum custom_keycodes {
     KC_WIN_CTRL_L,
     KC_WIN_CTRL_R,
     KC_WIN_TAB,
-
-    KC_MY_BTN1,
-    KC_MY_BTN2,
-    KC_MY_BTN3,
 };
 
 #define KC_MO MO
@@ -66,7 +62,14 @@ enum custom_keycodes {
 #define KC_RGB_TOG   RGB_TOG
 #define KC_RGB_MOD   RGB_MOD
 
+#define KC_DM_REC1   DM_REC1
+#define KC_DM_REC2   DM_REC2
+#define KC_DM_PLY1   DM_PLY1
+#define KC_DM_PLY2   DM_PLY2
+#define KC_DM_RSTP   DYN_REC_STOP
+
 #define KC_RESET     RESET
+#define KC_EEP_RST   EEPROM_RESET
 /*
       RGB_M_P,
       RGB_M_B,
@@ -95,16 +98,16 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
         ESC, 1, 2, 3, 4, 5, 6,
         TAB, Q, W, E, R, T, Y,
         LCTL, A, S, D, F, G, NO,
-        LSFT, Z, X, C, V, B, MY_BTN3,
+        LSFT, Z, X, C, V, B, MS_BTN3,
         F5, PSCR, LWIN, RALT, SPC, MO(_FN), NO,
-           F1, F2, WIN_TAB, WIN_CTRL_L, WIN_CTRL_R, MY_BTN1, MY_BTN2,
+        DM_PLY1, DM_PLY2, WIN_TAB, WIN_CTRL_L, WIN_CTRL_R, MS_BTN1, MS_BTN2,
 
               6,       7, 8, 9, 0,   MINS,  EQL, JYEN, BSPC,       HOME, END, PSLS, PAST,
            MUTE,       Y, U, I, O,      P, LBRC, RBRC,  ENT,         P7,  P8,   P9, PMNS,
               G,       H, J, K, L,   SCLN, QUOT, NUHS,               P4,  P5,   P6, PPLS,
-        MY_BTN3,       B, N, M, COMM, DOT, SLSH,   RO, RSFT,         P1,  P2,   P3, PENT,
-        MY_BTN2, MY_BTN1, SPC, MO(_FN),NO, RCTL, PGUP, PGDN,       UP, P0, PDOT,
-        WIN_CTRL_L, WIN_CTRL_R, WIN_TAB, F10, F11, F12,  LEFT, DOWN, RGHT
+        MS_BTN3,       B, N, M, COMM, DOT, SLSH,   RO, RSFT,         P1,  P2,   P3, PENT,
+        MS_BTN2, MS_BTN1, SPC, MO(_FN),NO, RCTL, PGUP, PGDN,       UP, P0, PDOT,
+        WIN_CTRL_L, WIN_CTRL_R, WIN_TAB, WWW_BACK, WWW_FORWARD, NO,  LEFT, DOWN, RGHT
     ),
 
 
@@ -114,14 +117,14 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
             ,HOME,   ,   ,   ,   ,   ,
             ,    ,   ,   ,   ,   ,   ,
             ,    ,   ,   ,   ,   ,   ,
-            ,    ,   ,   ,   ,   ,   ,
+        DM_REC1, DM_REC2, DM_RSTP,   ,   ,   ,   ,
 
-          F6, F7,F8, F9,     F10,    F11,  F12,     ,  DEL,        INS,    ,     ,     ,
-            ,   ,  ,   ,      UP,       ,     ,     ,     ,           ,    ,     ,     ,
-            ,   ,  ,  LEFT, RGHT,       ,     ,  ENT,                 ,    ,     ,     ,
-            ,   ,  ,   ,    DOWN,       ,     ,     ,     ,           ,    ,     ,     ,
-            ,   ,  ,   ,        ,       ,     ,     ,       TRNS,          ,     ,
-            ,   ,  ,   ,        ,       ,             TRNS, TRNS, TRNS
+          F6,      F7,      F8, F9,     F10,    F11,  F12,     ,  DEL,       NLCK, INS,     ,   RESET,
+            ,    BRIU, RGB_HUI,   ,      UP,   BSPC,     ,     ,     ,           ,    ,     ,        ,
+        BRID, RGB_HUD,        ,  LEFT, RGHT,       ,     ,  ENT,                 ,    ,     ,        ,
+            ,        ,        ,   ,    DOWN,       ,     ,     ,     ,           ,    ,     ,        ,
+            ,        ,        ,   ,        ,       ,     ,     ,       TRNS,          ,     ,
+            ,        ,        ,   ,        ,       ,             TRNS, TRNS, TRNS
     )
 
 
@@ -224,12 +227,12 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
             }
             return false;
 #ifdef POINTING_DEVICE_ENABLE
-        case KC_MY_BTN1:
-        case KC_MY_BTN2:
-        case KC_MY_BTN3:
+        case KC_MS_BTN1:
+        case KC_MS_BTN2:
+        case KC_MS_BTN3:
         {
             report_mouse_t currentReport = pointing_device_get_report();
-            uint8_t btn = 1 << (keycode - KC_MY_BTN1);
+            uint8_t btn = 1 << (keycode - KC_MS_BTN1);
             if (record->event.pressed) {
                 currentReport.buttons |= btn;
             } else {

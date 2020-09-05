@@ -12,8 +12,6 @@
 // #define PAW3204_SCLK D1
 // #define PAW3204_DATA D0
 
-// #define NUMBER_OF_ENCODERS 1
-
 
 #define RGBLED_NUM 35
 

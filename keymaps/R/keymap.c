@@ -93,7 +93,7 @@ void matrix_scan_user(void) {
         dy = (dy < -127*MOUSE_THRESHOLD ? -127*MOUSE_THRESHOLD : dy > 127*MOUSE_THRESHOLD ? 127*MOUSE_THRESHOLD : dy);
         mouse_rem_x -= dx;
         mouse_rem_y -= dy;
-
+ 
         mouse_rep.x       =  dy / MOUSE_THRESHOLD;
         mouse_rep.y       = -dx / MOUSE_THRESHOLD;
 
@@ -108,8 +108,8 @@ void matrix_scan_user(void) {
     }
 #undef MOUSE_THRESHO
 #define SCROL_MIN         3
-#define SCROL_THRESHOLD_X 4
-#define SCROL_THRESHOLD_Y 64
+#define SCROL_THRESHOLD_Y 32
+#define SCROL_THRESHOLD_X 32
 
     while (paw_ready_s) {
         uint8_t stat;
@@ -120,10 +120,14 @@ void matrix_scan_user(void) {
 
         int8_t ax = abs(x);
         int8_t ay = abs(y);
-        if(ax < SCROL_MIN && ay < SCROL_MIN) break;
+        if(ax < SCROL_MIN && ay < SCROL_MIN) {
+            scrol_rem_x = scrol_rem_y = 0;
+            break;
+        }
         if(ax >= ay) {
             x += (x > 0 ? -SCROL_MIN : SCROL_MIN);
-            scrol_rem_x += x;
+            if(ax >= 0)  scrol_rem_x += x;
+            if(ax >= 15) scrol_rem_x += x;
         } else {
             y += (y > 0 ? -SCROL_MIN : SCROL_MIN);
             if(ay >= 0)  scrol_rem_y += y;
