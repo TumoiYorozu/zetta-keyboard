@@ -27,7 +27,8 @@ int RGB_current_mode;
 // Defines names for use in layer keycodes and the keymap
 enum layer_names {
     _BASE,
-    _FN
+    _FN,
+    _RG
 };
 
 // Defines the keycodes used by our macros in process_record_user
@@ -37,8 +38,10 @@ enum custom_keycodes {
     KC_WIN_CTRL_L,
     KC_WIN_CTRL_R,
     KC_WIN_TAB,
+    KC_SLP_RST,
 };
 
+#define KC__n      KC_NO
 #define KC_MO MO
 #define KC_BL_TOGG BL_TOGG
 #define KC_BL_BRTG BL_BRTG
@@ -70,6 +73,11 @@ enum custom_keycodes {
 
 #define KC_RESET     RESET
 #define KC_EEP_RST   EEPROM_RESET
+
+#define KC_SH(key)   LSFT(KC_##key)
+#define KC_AL(key)   LALT(KC_##key)
+#define KC_RW(key)   RWIN_T(KC_##key)
+#define KC__LT(layer,key)   LT(layer,KC_##key)
 /*
       RGB_M_P,
       RGB_M_B,
@@ -97,33 +105,48 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     [_BASE] = LAYOUT_kc(
         ESC, 1, 2, 3, 4, 5, 6,
         TAB, Q, W, E, R, T, Y,
-        LCTL, A, S, D, F, G, NO,
+        LCTL, A, S, D, F, G, _n,
         LSFT, Z, X, C, V, B, MS_BTN3,
-        F5, PSCR, LWIN, RALT, SPC, MO(_FN), NO,
+        F5,_LT(_RG,PSCR), LWIN, RALT, SPC, MO(_FN), _n,
         DM_PLY1, DM_PLY2, WIN_TAB, WIN_CTRL_L, WIN_CTRL_R, MS_BTN1, MS_BTN2,
 
-              6,       7, 8, 9, 0,   MINS,  EQL, JYEN, BSPC,       HOME, END, PSLS, PAST,
-           MUTE,       Y, U, I, O,      P, LBRC, RBRC,  ENT,         P7,  P8,   P9, PMNS,
-              G,       H, J, K, L,   SCLN, QUOT, NUHS,               P4,  P5,   P6, PPLS,
-        MS_BTN3,       B, N, M, COMM, DOT, SLSH,   RO, RSFT,         P1,  P2,   P3, PENT,
-        MS_BTN2, MS_BTN1, SPC, MO(_FN),NO, RCTL, PGUP, PGDN,       UP, P0, PDOT,
-        WIN_CTRL_L, WIN_CTRL_R, WIN_TAB, WWW_BACK, WWW_FORWARD, NO,  LEFT, DOWN, RGHT
+              6,       7, 8, 9, 0,        MINS,  EQL, JYEN, BSPC,       HOME, END, PSLS, PAST,
+           MUTE,       Y, U, I, O,           P,  LBRC, RBRC, ENT,         P7,  P8,   P9, PMNS,
+              G,       H, J, K, L,        SCLN, QUOT, NUHS,               P4,  P5,   P6, PPLS,
+        MS_BTN3,       B, N, M, COMM,      DOT, SLSH,   RO, RSFT,         P1,  P2,   P3, PENT,
+        MS_BTN2, MS_BTN1, SPC, MO(_FN), RW(NO), RCTL, PGUP, PGDN,       UP, P0, PDOT,
+        WIN_CTRL_L, WIN_CTRL_R, WIN_TAB, WWW_BACK, WWW_FORWARD, F12,  LEFT, DOWN, RGHT
     ),
 
-
     [_FN] = LAYOUT_kc(
-        ZKHK,  F1, F2, F3, F4, F5, F6,
-        CAPS,    ,   ,END,   ,   ,   ,
-            ,HOME,   ,   ,   ,   ,   ,
-            ,    ,   ,   ,   ,   ,   ,
-            ,    ,   ,   ,   ,   ,   ,
-        DM_REC1, DM_REC2, DM_RSTP,   ,   ,   ,   ,
+           ZKHK,      F1,         F2,   F3,   F4,   F5,  F6,
+          PAUSE,    SCLN,       PGUP,  END,   UP,  ENT, ENT,
+               ,    HOME,       PGDN, LEFT, DOWN, RGHT,    ,
+               ,WWW_BACK,WWW_FORWARD,   RO,  DEL, BSPC,    ,
+           PSCR,        ,           ,     ,     ,     ,    ,
+        DM_REC1, DM_REC2,    DM_RSTP,     ,     ,     ,    ,
 
-          F6,      F7,      F8, F9,     F10,    F11,  F12,     ,  DEL,       NLCK, INS,     ,   RESET,
-            ,    BRIU, RGB_HUI,   ,      UP,   BSPC,     ,     ,     ,           ,    ,     ,        ,
-        BRID, RGB_HUD,        ,  LEFT, RGHT,       ,     ,  ENT,                 ,    ,     ,        ,
-            ,        ,        ,   ,    DOWN,       ,     ,     ,     ,           ,    ,     ,        ,
-            ,        ,        ,   ,        ,       ,     ,     ,       TRNS,          ,     ,
+          F6,      F7,      F8, F9,     F10,    F11,  F12,  F12,  DEL,       NLCK, INS, PAUSE, SLP_RST,
+            , RGB_HUI,    MS_U, _n,      UP,   BSPC,  DEL,     ,     ,           ,    ,      ,        ,
+        RGB_HUD, MS_L,    MS_R,  LEFT, RGHT,       ,     ,  ENT,                 ,    ,      ,        ,
+            ,        ,    MS_D, _n,    DOWN, SH(RO),     ,     ,     ,           ,    ,      ,        ,
+            ,        ,        ,   ,        ,       ,     ,     ,       TRNS,          ,      ,
+            ,        ,        ,   ,        ,       ,             TRNS, TRNS, TRNS
+    ),
+
+    [_RG] = LAYOUT_kc(
+              7,       8,          9,    0, MINS,  EQL,JYEN,
+              U,       I,          O,    P, LBRC, RBRC,NUHS,
+               ,       H,          J,    K,    L, SCLN,    ,
+               ,       N,          M, COMM,  DOT, SLSH,    ,
+            F12,        ,           ,     ,     ,     ,    ,
+               ,        ,           ,     ,     ,     ,    ,
+
+            ,        ,        ,   ,        ,       ,     ,     ,     ,           ,    ,      ,        ,
+            ,        ,        ,   ,        ,       ,     ,     ,     ,           ,    ,      ,        ,
+            ,        ,        ,   ,        ,       ,     ,     ,                 ,    ,      ,        ,
+            ,        ,        ,   ,        ,       ,     ,     ,     ,           ,    ,      ,        ,
+            ,        ,        ,   ,        ,       ,     ,     ,       TRNS,          ,      ,
             ,        ,        ,   ,        ,       ,             TRNS, TRNS, TRNS
     )
 
@@ -147,22 +170,29 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //*/
 };
 
+void my_mouse_rot(uint8_t key) {
+    report_mouse_t currentReport = pointing_device_get_report();
+    if (key == KC_WH_U) currentReport.v++;
+    if (key == KC_WH_D) currentReport.v--;
+    if (key == KC_WH_R) currentReport.h++;
+    if (key == KC_WH_L) currentReport.h--;
+    pointing_device_set_report(currentReport);
+}
 
 void encoder_update_user(uint8_t  index, bool clockwise) {
-
     debug_enable = true; dprintf("encoder_update_user: %d %d\n", (int)index, (int)clockwise);
 
     if (index == 0) {
         if (clockwise) {
-            tap_code(KC_MS_WH_RIGHT);
+            my_mouse_rot(KC_MS_WH_RIGHT);
         } else {
-            tap_code(KC_MS_WH_LEFT);
+            my_mouse_rot(KC_MS_WH_LEFT);
         }
     } else if (index == 1){
         if (clockwise) {
-            tap_code(KC_MS_WH_DOWN);
+            my_mouse_rot(KC_MS_WH_DOWN);
         } else {
-            tap_code(KC_MS_WH_UP);
+            my_mouse_rot(KC_MS_WH_UP);
         }
     } else if (index == 2){
         if (clockwise) {
@@ -226,6 +256,11 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
                 unregister_code(KC_LWIN);
             }
             return false;
+        case KC_SLP_RST:
+            tap_code(KC_SLEP);
+            reset_keyboard();
+            return false;
+
 #ifdef POINTING_DEVICE_ENABLE
         case KC_MS_BTN1:
         case KC_MS_BTN2:

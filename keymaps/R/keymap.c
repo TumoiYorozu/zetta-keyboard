@@ -6,12 +6,19 @@
 extern keymap_config_t keymap_config;
 
 
-
+/*
 #define MOUSE_PAW3204_SCLK D0
 #define MOUSE_PAW3204_DATA D1
 
 #define SCROL_PAW3204_SCLK F7
 #define SCROL_PAW3204_DATA F6
+/*/
+#define MOUSE_PAW3204_SCLK F7
+#define MOUSE_PAW3204_DATA F6
+
+#define SCROL_PAW3204_SCLK D0
+#define SCROL_PAW3204_DATA D1
+//*/
 
 void matrix_init_user(void) {
     #ifdef AUDIO_ENABLE
@@ -37,10 +44,10 @@ void keyboard_post_init_user() {
     debug_mouse = true;
 }
 
-uint16_t mouse_rem_x = 0; // x256
-uint16_t mouse_rem_y = 0; // x256
-uint16_t scrol_rem_x = 0; // x256
-uint16_t scrol_rem_y = 0; // x256
+int16_t mouse_rem_x = 0; // x256
+int16_t mouse_rem_y = 0; // x256
+int16_t scrol_rem_x = 0; // x256
+int16_t scrol_rem_y = 0; // x256
 
 void matrix_scan_user(void) {
 
@@ -66,7 +73,7 @@ void matrix_scan_user(void) {
             paw_ready_s = false;
         }
     }
-    if (paw_ready_m) {
+    if (paw_ready_m)  {
         uint8_t stat;
         int8_t x, y;
 
@@ -74,12 +81,12 @@ void matrix_scan_user(void) {
 
         mouse_rep = pointing_device_get_report();
 
-        uint16_t v = (uint16_t)x*x + (uint16_t)y*y;
-        uint16_t c = (
+        int16_t v = (int16_t)x*x + (int16_t)y*y;
+        int16_t c = (
             v < 20    ? 5 :
-            v < 40*40 ? 8:
-            v < 80*80 ? 12:
-                        16);
+            v < 40*40 ? 12:
+            v < 80*80 ? 18:
+                        24);
 
         mouse_rem_x += x * c;
         mouse_rem_y += y * c;
@@ -93,7 +100,7 @@ void matrix_scan_user(void) {
         dy = (dy < -127*MOUSE_THRESHOLD ? -127*MOUSE_THRESHOLD : dy > 127*MOUSE_THRESHOLD ? 127*MOUSE_THRESHOLD : dy);
         mouse_rem_x -= dx;
         mouse_rem_y -= dy;
- 
+
         mouse_rep.x       =  dy / MOUSE_THRESHOLD;
         mouse_rep.y       = -dx / MOUSE_THRESHOLD;
 
@@ -111,7 +118,7 @@ void matrix_scan_user(void) {
 #define SCROL_THRESHOLD_Y 32
 #define SCROL_THRESHOLD_X 32
 
-    while (paw_ready_s) {
+    while (paw_ready_s && false) {
         uint8_t stat;
         int8_t x, y;
 

@@ -27,7 +27,7 @@ SPLIT_KEYBOARD = yes
 CUSTOM_MATRIX = yes
 CONSOLE_ENABLE = yes
 SLEEP_LED_ENABLE = yes
-# DYNAMIC_MACRO_ENABLE = yes
+DYNAMIC_MACRO_ENABLE = yes
 SRC += matrix.c
 SRC += matrix_common.c
 
