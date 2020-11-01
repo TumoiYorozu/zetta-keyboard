@@ -20,6 +20,10 @@ extern keymap_config_t keymap_config;
 #define SCROL_PAW3204_DATA D1
 //*/
 
+void rgb_led_monitor();
+void rgb_led_monitor_init();
+
+
 void matrix_init_user(void) {
     #ifdef AUDIO_ENABLE
         startup_user();
@@ -34,6 +38,7 @@ void matrix_init_user(void) {
 
     init_paw3204(MOUSE_PAW3204_SCLK, MOUSE_PAW3204_DATA);
     init_paw3204(SCROL_PAW3204_SCLK, SCROL_PAW3204_DATA);
+    rgb_led_monitor_init();
 }
 
 
@@ -49,10 +54,14 @@ int16_t mouse_rem_y = 0; // x256
 int16_t scrol_rem_x = 0; // x256
 int16_t scrol_rem_y = 0; // x256
 
-void matrix_scan_user(void) {
 
+void matrix_scan_user(void) {
+    rgb_led_monitor();
+
+    /*
     static int  cnt_m, cnt_s;
     static bool paw_ready_m, paw_ready_s;
+    // rgblight_task();
     if (cnt_m++ % 50 == 0) {
         uint8_t pid = read_pid_paw3204(MOUSE_PAW3204_SCLK, MOUSE_PAW3204_DATA);
         if (pid == 0x30) {
@@ -161,4 +170,5 @@ void matrix_scan_user(void) {
 #undef SCROL_MIN
 #undef SCROL_THRESHOLD_X
 #undef SCROL_THRESHOLD_Y
+    //*/
 }

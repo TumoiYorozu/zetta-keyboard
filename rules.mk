@@ -8,8 +8,6 @@ BOOTLOADER = atmel-dfu
 #   change yes to no to disable
 #
 BOOTMAGIC_ENABLE = lite     # Virtual DIP switch configuration
-MOUSEKEY_ENABLE = yes       # Mouse keys
-EXTRAKEY_ENABLE = yes       # Audio control and System control
 #CONSOLE_ENABLE = no         # Console for debug
 COMMAND_ENABLE = no         # Commands for debug and configuration
 # Do not enable SLEEP_LED_ENABLE. it uses the same timer as BACKLIGHT_ENABLE
@@ -27,7 +25,11 @@ SPLIT_KEYBOARD = yes
 CUSTOM_MATRIX = yes
 CONSOLE_ENABLE = yes
 SLEEP_LED_ENABLE = yes
-DYNAMIC_MACRO_ENABLE = yes
-SRC += matrix.c
-SRC += matrix_common.c
+SPLIT_TRANSPORT = custom
 
+OPT_DEFS += -DRGBLIGHT_DISPLAY
+
+SRC += matrix_common.c
+SRC += split_common/transport.c \
+	   split_common/serial.c \
+	   split_common/matrix.c

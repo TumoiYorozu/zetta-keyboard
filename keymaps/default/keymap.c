@@ -17,6 +17,7 @@
 
 #include "debug.h"
 #include "pointing_device.h"
+#include "raw_hid.h"
 
 #ifdef RGBLIGHT_ENABLE
 #include "rgblight.h"
@@ -129,7 +130,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
           F6,      F7,      F8, F9,     F10,    F11,  F12,  F12,  DEL,       NLCK, INS, PAUSE, SLP_RST,
             , RGB_HUI,    MS_U, _n,      UP,   BSPC,  DEL,     ,     ,           ,    ,      ,        ,
         RGB_HUD, MS_L,    MS_R,  LEFT, RGHT,       ,     ,  ENT,                 ,    ,      ,        ,
-            ,        ,    MS_D, _n,    DOWN, SH(RO),     ,     ,     ,           ,    ,      ,        ,
+            , RGB_MOD,    MS_D, _n,    DOWN, SH(RO),     ,     ,     ,           ,    ,      ,        ,
             ,        ,        ,   ,        ,       ,     ,     ,       TRNS,          ,      ,
             ,        ,        ,   ,        ,       ,             TRNS, TRNS, TRNS
     ),
@@ -170,6 +171,7 @@ const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
     //*/
 };
 
+#ifdef POINTING_DEVICE_ENABLE
 void my_mouse_rot(uint8_t key) {
     report_mouse_t currentReport = pointing_device_get_report();
     if (key == KC_WH_U) currentReport.v++;
@@ -178,10 +180,11 @@ void my_mouse_rot(uint8_t key) {
     if (key == KC_WH_L) currentReport.h--;
     pointing_device_set_report(currentReport);
 }
+#endif
 
 void encoder_update_user(uint8_t  index, bool clockwise) {
+#ifdef POINTING_DEVICE_ENABLE
     debug_enable = true; dprintf("encoder_update_user: %d %d\n", (int)index, (int)clockwise);
-
     if (index == 0) {
         if (clockwise) {
             my_mouse_rot(KC_MS_WH_RIGHT);
@@ -201,6 +204,7 @@ void encoder_update_user(uint8_t  index, bool clockwise) {
             tap_code(KC_AUDIO_VOL_DOWN);
         }
     }
+#endif
 }
 
 bool process_record_user(uint16_t keycode, keyrecord_t *record) {
@@ -280,3 +284,120 @@ bool process_record_user(uint16_t keycode, keyrecord_t *record) {
     }
     return true;
 }
+
+void rgb_led_monitor_init() {
+    //Serial.begin(115200);
+}
+
+/*
+
+30 fps
+98 LEDs
+ 3 channel
+ 1 byte/channel
+
+
+
+
+120*32 = 3840 Byte
+30 fps
+98 LEDs
+ 1 byte/pix
+
+
+32byte * 8bit = 256bit
+(256-2)/ceil(98/4) = 254/25 = 10.16 bit/pix
+
+10^3 = 1000
+8^3 = 512
+
+*/
+
+
+void rgb_led_monitor() {
+}
+
+
+void set_serial_m2s_buffer_led_dat(uint8_t i, uint8_t v);
+
+void decode_and_set_led(uint8_t val, void *led1) {
+    //sethsv_raw(hue, sat, val > RGBLIGHT_LIMIT_VAL ? RGBLIGHT_LIMIT_VAL : val, led1);
+    if (1) {
+        uint16_t b = val % 6;
+        uint16_t g = val / 6 % 6;
+        uint16_t r = val / 36;
+        b = (b*(RGBLIGHT_LIMIT_VAL*8/5)/8);
+        g = (g*(RGBLIGHT_LIMIT_VAL*8/5)/8);
+        r = (r*(RGBLIGHT_LIMIT_VAL*8/5)/8);
+        setrgb(r, g, b, (LED_TYPE *)led1);
+    } else {
+        uint16_t g = val & 0b111;
+        uint16_t r = (val >> 3) & 0b111;
+        uint16_t b = val >> 6;
+        g = (g*(RGBLIGHT_LIMIT_VAL*8/7)/8);
+        r = (r*(RGBLIGHT_LIMIT_VAL*8/7)/8);
+        b = (b*(RGBLIGHT_LIMIT_VAL*4/3)/4);
+        // g = g * g * RGBLIGHT_LIMIT_VAL / 49;
+        // r = r * r * RGBLIGHT_LIMIT_VAL / 49;
+        // b = b * b * RGBLIGHT_LIMIT_VAL / 9;
+        // g = g * (g*14-g*g)*RGBLIGHT_LIMIT_VAL/343;
+        // r = r * (r*14-r*r)*RGBLIGHT_LIMIT_VAL/343;
+        // b = b * (b*6 -b*b)*RGBLIGHT_LIMIT_VAL/81;
+        setrgb(r, g, b, (LED_TYPE *)led1);
+    }
+}
+
+static void set_led_rgb(RGB x, uint16_t val, LED_TYPE *led1) {
+    setrgb(x.r * val / 16, x.g * val / 16, x.b * val / 16, (LED_TYPE *)led1);
+}
+
+// 受信イベント関数
+void raw_hid_receive(uint8_t *data, uint8_t length) {
+#ifndef RGBLIGHT_DISPLAY
+    return;
+#endif
+    const int pix_per_line = 30;
+    //dprintf("RGBLED_NUM_R %d\n", RGBLED_NUM_R);
+    uint8_t line = data[0];
+    uint8_t isGray = (line >= 128);
+    line -= isGray * 128;
+    uint8_t update = 0;
+    if (isGray) {
+        int i = 1;
+        int j = line * pix_per_line * 2;
+        HSV hsv = {rgblight_config.hue, rgblight_config.sat, RGBLIGHT_LIMIT_VAL};
+        RGB rgb = hsv_to_rgb(hsv);
+        // dprintf("[%3d %3d %3d]\n", (int)(rgb.r), (int)(rgb.g), (int)(rgb.b));
+        for(; i < length; ++i){
+            if (j >= RGBLED_NUM_L) break;
+            set_serial_m2s_buffer_led_dat(j, data[i]);
+            j+=2;
+        }
+        if (j == RGBLED_NUM_L + 1){
+            set_led_rgb(rgb, data[i-1]>>4, (LED_TYPE *)&led[j-1]);
+            update = 1;
+        }
+        for(; i < length; ++i){
+            if (j >= RGBLED_NUM) break;
+            set_led_rgb(rgb, data[i]&15, (LED_TYPE *)&led[j]); ++j;
+            set_led_rgb(rgb, data[i]>>4, (LED_TYPE *)&led[j]); ++j;
+            update = 1;
+        }
+    } else {
+        int j = line * pix_per_line;
+        for(int i = 1; i < length; ++i){
+            if (j >= RGBLED_NUM) break;
+            if (j < RGBLED_NUM_L) {
+                set_serial_m2s_buffer_led_dat(j, data[i]);
+            } else {
+                decode_and_set_led(data[i], &led[j]);
+                update = 1;
+            }
+            ++j;
+        }
+    }
+    if(update) {
+        rgblight_set();
+    }
+}
+
